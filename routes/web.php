@@ -1,3 +1,0 @@
-<?php
-
-// Routes web desabilitadas - aplicação é apenas API
