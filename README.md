@@ -1,58 +1,365 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Inventory API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project is a Laravel 13 API with a custom `API_KEY` middleware and modular authentication/user management endpoints.
 
-## About Laravel
+All API routes are prefixed with `/api` and require the `X-API-KEY` header.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tech Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.5
+- Laravel 13
+- SQLite (default local database)
+- Redis variables pre-configured in `.env` (cache can be switched later)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Quick Start
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+1. Install dependencies:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+2. Create environment file:
 
-## Contributing
+```bash
+copy .env.example .env
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. Generate app key:
 
-## Code of Conduct
+```bash
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. Configure `.env` values:
 
-## Security Vulnerabilities
+```env
+APP_URL=http://localhost:8000
+API_KEY=your-secret-api-key
+DB_CONNECTION=sqlite
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+5. Run migrations and seed default data:
 
-## License
+```bash
+php artisan migrate
+php artisan db:seed
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+6. Start the server:
+
+```bash
+php artisan serve
+```
+
+## Authentication Model
+
+This API uses a global API key middleware for every `/api` route.
+
+Required header on every request:
+
+```http
+X-API-KEY: your-secret-api-key
+Content-Type: application/json
+```
+
+If API key is missing or invalid:
+
+- Status: `401 Unauthorized`
+- Response:
+
+```json
+{
+	"message": "Invalid API key."
+}
+```
+
+If API key is not configured on the server:
+
+- Status: `500 Internal Server Error`
+- Response:
+
+```json
+{
+	"message": "API key is not configured."
+}
+```
+
+## Default Seeded User
+
+Running `php artisan db:seed` creates or updates a default user:
+
+- Email: `giordanoberwig@proton.me`
+- Password: `12345678`
+
+When the `users` table includes the optional columns, seeding also sets:
+
+- Username: `giordanoberwig`
+- Admin: `true`
+
+## API Endpoints
+
+Base URL (local):
+
+```text
+http://localhost:8000/api
+```
+
+### 1) Register User
+
+- Method: `POST`
+- URL: `/register`
+
+Request payload:
+
+```json
+{
+	"username": "giordanoberwig",
+	"email": "giordanoberwig@proton.me",
+	"phone": "11999999999",
+	"cpf": "12345678901",
+	"password": "12345678",
+	"admin": false
+}
+```
+
+Validation rules:
+
+- `username`: required, string, min 3, max 50, unique
+- `email`: required, valid email, max 255, unique
+- `phone`: required, string, min 8, max 20, unique
+- `cpf`: required, string, exactly 11 chars, unique
+- `password`: required, string, min 8
+- `admin`: required, boolean
+
+Success response:
+
+- Status: `201 Created`
+
+```json
+{
+	"message": "User registered successfully.",
+	"user": {
+		"id": 1,
+		"name": "giordanoberwig",
+		"username": "giordanoberwig",
+		"email": "giordanoberwig@proton.me",
+		"phone": "11999999999",
+		"cpf": "12345678901",
+		"admin": false,
+		"created_at": "...",
+		"updated_at": "..."
+	}
+}
+```
+
+### 2) Login
+
+- Method: `POST`
+- URL: `/login`
+
+Request payload:
+
+```json
+{
+	"login": "giordanoberwig@proton.me",
+	"password": "12345678"
+}
+```
+
+Notes:
+
+- `login` accepts either `email` or `username`.
+
+Success response:
+
+- Status: `200 OK`
+
+```json
+{
+	"message": "Login successful.",
+	"user": {
+		"id": 1,
+		"name": "giordanoberwig",
+		"username": "giordanoberwig",
+		"email": "giordanoberwig@proton.me",
+		"phone": "11999999999",
+		"cpf": "12345678901",
+		"admin": true,
+		"created_at": "...",
+		"updated_at": "..."
+	}
+}
+```
+
+Invalid credentials response:
+
+- Status: `401 Unauthorized`
+
+```json
+{
+	"message": "Invalid credentials."
+}
+```
+
+### 3) Update User Profile
+
+- Method: `PATCH`
+- URL: `/users/{user}/profile`
+
+Request payload (any combination of fields):
+
+```json
+{
+	"username": "new_username",
+	"email": "new@email.com",
+	"phone": "11911111111",
+	"cpf": "11122233344"
+}
+```
+
+Validation rules:
+
+- Every field is optional (`sometimes`) but validated if provided.
+- Unique fields ignore the current user ID.
+
+Success response:
+
+- Status: `200 OK`
+
+```json
+{
+	"message": "User profile updated successfully.",
+	"user": {
+		"id": 1,
+		"name": "new_username",
+		"username": "new_username",
+		"email": "new@email.com",
+		"phone": "11911111111",
+		"cpf": "11122233344",
+		"admin": false,
+		"created_at": "...",
+		"updated_at": "..."
+	}
+}
+```
+
+### 4) Update User Password
+
+- Method: `PATCH`
+- URL: `/users/{user}/password`
+
+Request payload:
+
+```json
+{
+	"password": "newStrongPassword123"
+}
+```
+
+Validation rules:
+
+- `password`: required, string, min 8
+
+Success response:
+
+- Status: `200 OK`
+- Message: `User password updated successfully.`
+
+### 5) Update User Admin Status
+
+- Method: `PATCH`
+- URL: `/users/{user}/admin`
+
+Request payload:
+
+```json
+{
+	"admin": true
+}
+```
+
+Validation rules:
+
+- `admin`: required, boolean
+
+Success response:
+
+- Status: `200 OK`
+- Message: `User admin status updated successfully.`
+
+## Validation Error Format
+
+When validation fails, Laravel returns `422 Unprocessable Entity`:
+
+```json
+{
+	"message": "The given data was invalid.",
+	"errors": {
+		"email": [
+			"The email has already been taken."
+		]
+	}
+}
+```
+
+## cURL Examples
+
+### Register
+
+```bash
+curl -X POST http://localhost:8000/api/register \
+	-H "X-API-KEY: your-secret-api-key" \
+	-H "Content-Type: application/json" \
+	-d '{"username":"giordanoberwig","email":"giordanoberwig@proton.me","phone":"11999999999","cpf":"12345678901","password":"12345678","admin":false}'
+```
+
+### Login
+
+```bash
+curl -X POST http://localhost:8000/api/login \
+	-H "X-API-KEY: your-secret-api-key" \
+	-H "Content-Type: application/json" \
+	-d '{"login":"giordanoberwig@proton.me","password":"12345678"}'
+```
+
+### Update Profile
+
+```bash
+curl -X PATCH http://localhost:8000/api/users/1/profile \
+	-H "X-API-KEY: your-secret-api-key" \
+	-H "Content-Type: application/json" \
+	-d '{"username":"new_username","phone":"11911111111"}'
+```
+
+### Update Password
+
+```bash
+curl -X PATCH http://localhost:8000/api/users/1/password \
+	-H "X-API-KEY: your-secret-api-key" \
+	-H "Content-Type: application/json" \
+	-d '{"password":"newStrongPassword123"}'
+```
+
+### Update Admin
+
+```bash
+curl -X PATCH http://localhost:8000/api/users/1/admin \
+	-H "X-API-KEY: your-secret-api-key" \
+	-H "Content-Type: application/json" \
+	-d '{"admin":true}'
+```
+
+## Testing
+
+Run API feature tests:
+
+```bash
+php artisan test --compact tests/Feature/AuthApiTest.php
+```
+
+## Notes
+
+- This API currently uses `API_KEY` header-based protection for all routes.
+- Login returns user data but does not issue JWT/Sanctum tokens yet.
+- If you want token-based auth next, add Laravel Sanctum and protect update routes with authenticated user context.
