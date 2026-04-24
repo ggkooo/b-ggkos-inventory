@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\RegisterUserController;
+use App\Http\Controllers\Api\Users\UpdateUserAdminController;
+use App\Http\Controllers\Api\Users\UpdateUserPasswordController;
+use App\Http\Controllers\Api\Users\UpdateUserProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,5 +18,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Adicione suas rotas de API aqui
-// Exemplo: Route::apiResource('users', UserController::class);
+Route::post('/register', RegisterUserController::class);
+Route::post('/login', LoginController::class);
+
+Route::prefix('/users/{user}')->group(function () {
+    Route::patch('/profile', UpdateUserProfileController::class);
+    Route::patch('/password', UpdateUserPasswordController::class);
+    Route::patch('/admin', UpdateUserAdminController::class);
+});
