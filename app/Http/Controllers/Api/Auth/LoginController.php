@@ -25,9 +25,14 @@ class LoginController extends Controller
             ], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
+        $token = $user->createToken('session-token')->plainTextToken;
+
         return response()->json([
             'message' => 'Login successful.',
             'user' => $user,
+            'user_uuid' => $user->uuid,
+            'token_type' => 'Bearer',
+            'access_token' => $token,
         ]);
     }
 }
