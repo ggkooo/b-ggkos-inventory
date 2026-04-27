@@ -362,4 +362,6 @@ php artisan test --compact tests/Feature/AuthApiTest.php
 
 - This API currently uses `API_KEY` header-based protection for all routes.
 - Login returns user data but does not issue JWT/Sanctum tokens yet.
+- Any client that has the API key can call user update endpoints by user ID.
+- There is no per-user authorization policy on update endpoints yet.
 - If you want token-based auth next, add Laravel Sanctum and protect update routes with authenticated user context.
