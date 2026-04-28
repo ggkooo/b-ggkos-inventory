@@ -17,3 +17,5 @@ Route::middleware(['auth:sanctum', 'throttle:backend-write'])->group(function ()
     Route::patch('/users/{user:uuid}/password', UpdateUserPasswordController::class)->name('backend.users.password.update');
     Route::patch('/users/{user:uuid}/admin', UpdateUserAdminController::class)->name('backend.users.admin.update');
 });
+
+require __DIR__.'/api-inventory.php';
