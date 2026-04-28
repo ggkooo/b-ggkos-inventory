@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\BackendProxyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/gateway-health', BackendHealthController::class)->name('gateway.health');
+require __DIR__.'/api-inventory.php';
+
 Route::any('/proxy/{path?}', BackendProxyController::class)
     ->where('path', '.*')
     ->name('gateway.proxy.explicit');
