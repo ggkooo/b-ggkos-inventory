@@ -59,6 +59,14 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "test:smoke": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test --compact tests/Feature/RouteRequests/ApiRoutesSmokeTest.php"
+        ],
+        "test:inventory": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test --compact tests/Feature/InventorySchemaTest.php tests/Feature/InventoryApiTest.php tests/Feature/InventoryAuthorizationTest.php"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
