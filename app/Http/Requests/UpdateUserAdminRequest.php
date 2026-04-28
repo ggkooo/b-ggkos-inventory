@@ -11,7 +11,14 @@ class UpdateUserAdminRequest extends FormRequest
     {
         $authenticatedUser = $this->user();
 
-        return $authenticatedUser instanceof User && (bool) $authenticatedUser->admin;
+        /** @var User|null $targetUser */
+        $targetUser = $this->route('user');
+
+        if (! $authenticatedUser instanceof User || ! $targetUser instanceof User) {
+            return false;
+        }
+
+        return (bool) $authenticatedUser->admin && ! $authenticatedUser->is($targetUser);
     }
 
     public function rules(): array
