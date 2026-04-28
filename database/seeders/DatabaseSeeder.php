@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $attributes = [
-            'name' => 'Giordano Berwig',
+            'name' => 'giordanoberwig',
             'password' => '12345678',
         ];
 
@@ -26,11 +26,11 @@ class DatabaseSeeder extends Seeder
         }
 
         if (Schema::hasColumn('users', 'phone')) {
-            $attributes['phone'] = null;
+            $attributes['phone'] = '11999999999';
         }
 
         if (Schema::hasColumn('users', 'cpf')) {
-            $attributes['cpf'] = null;
+            $attributes['cpf'] = '12345678901';
         }
 
         if (Schema::hasColumn('users', 'admin')) {

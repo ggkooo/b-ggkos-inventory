@@ -1,0 +1,37 @@
+﻿[
+    {
+        "port":  9001,
+        "pid":  28908,
+        "stdout_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9001.stdout.log",
+        "stderr_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9001.stderr.log",
+        "started_at":  "2026-04-27T10:34:31.4879073-03:00"
+    },
+    {
+        "port":  9002,
+        "pid":  13860,
+        "stdout_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9002.stdout.log",
+        "stderr_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9002.stderr.log",
+        "started_at":  "2026-04-27T10:34:31.6363984-03:00"
+    },
+    {
+        "port":  9003,
+        "pid":  14344,
+        "stdout_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9003.stdout.log",
+        "stderr_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9003.stderr.log",
+        "started_at":  "2026-04-27T10:34:31.7731117-03:00"
+    },
+    {
+        "port":  9004,
+        "pid":  26060,
+        "stdout_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9004.stdout.log",
+        "stderr_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9004.stderr.log",
+        "started_at":  "2026-04-27T10:34:31.9279186-03:00"
+    },
+    {
+        "port":  9005,
+        "pid":  25344,
+        "stdout_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9005.stdout.log",
+        "stderr_log":  "C:\\Users\\giordano.berwig\\Documents\\b-ggko\u0027s-inventory\\storage\\framework\\backend-servers\\backend-9005.stderr.log",
+        "started_at":  "2026-04-27T10:34:32.1588922-03:00"
+    }
+]

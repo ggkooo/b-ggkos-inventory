@@ -1,100 +1,176 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
-uses(RefreshDatabase::class);
-
-test('it registers a user with required fields', function () {
+beforeEach(function () {
     config()->set('app.api_key', 'test-api-key');
-
-    $response = $this->withHeaders([
-        'X-API-KEY' => 'test-api-key',
-    ])->postJson('/api/register', [
-        'username' => 'giordano',
-        'email' => 'giordano@example.com',
-        'phone' => '11999999999',
-        'cpf' => '12345678901',
-        'password' => 'secret1234',
-        'admin' => false,
+    config()->set('backends.round_robin_cache_key', 'tests:gateway-auth:index');
+    config()->set('backends.servers', [
+        'http://backend-1.test',
+        'http://backend-2.test',
     ]);
 
-    $response->assertCreated()
-        ->assertJsonPath('user.username', 'giordano')
-        ->assertJsonPath('user.email', 'giordano@example.com')
-        ->assertJsonPath('user.phone', '11999999999')
-        ->assertJsonPath('user.cpf', '12345678901')
-        ->assertJsonPath('user.admin', false);
-
-    $this->assertDatabaseHas('users', [
-        'username' => 'giordano',
-        'email' => 'giordano@example.com',
-        'phone' => '11999999999',
-        'cpf' => '12345678901',
-        'admin' => false,
-    ]);
+    Cache::forget('tests:gateway-auth:index');
 });
 
-test('it logs in with username and password', function () {
-    config()->set('app.api_key', 'test-api-key');
-
-    User::factory()->create([
-        'username' => 'giordano',
-        'email' => 'giordano@example.com',
-        'password' => 'secret1234',
+test('it proxies login route through load balancer', function () {
+    Http::fake([
+        'http://backend-1.test/api/login' => Http::response([
+            'message' => 'Login successful.',
+            'backend' => 'backend-1',
+        ], 200),
+        'http://backend-2.test/api/login' => Http::response([
+            'message' => 'Login successful.',
+            'backend' => 'backend-2',
+        ], 200),
     ]);
 
-    $response = $this->withHeaders([
+    $firstResponse = $this->withHeaders([
         'X-API-KEY' => 'test-api-key',
     ])->postJson('/api/login', [
         'login' => 'giordano',
         'password' => 'secret1234',
     ]);
 
-    $response->assertSuccessful()
-        ->assertJsonPath('user.username', 'giordano');
+    $secondResponse = $this->withHeaders([
+        'X-API-KEY' => 'test-api-key',
+    ])->postJson('/api/login', [
+        'login' => 'giordano',
+        'password' => 'secret1234',
+    ]);
+
+    $firstResponse->assertSuccessful()
+        ->assertJsonPath('backend', 'backend-1')
+        ->assertJsonPath('processed_by_server', 'http://backend-1.test')
+        ->assertJsonPath('request_id', $firstResponse->headers->get('X-Request-Id'))
+        ->assertHeader('X-Backend-Url', 'http://backend-1.test');
+
+    $secondResponse->assertSuccessful()
+        ->assertJsonPath('backend', 'backend-2')
+        ->assertJsonPath('processed_by_server', 'http://backend-2.test')
+        ->assertJsonPath('request_id', $secondResponse->headers->get('X-Request-Id'))
+        ->assertHeader('X-Backend-Url', 'http://backend-2.test');
 });
 
-test('it updates user admin and password', function () {
-    config()->set('app.api_key', 'test-api-key');
-
-    $user = User::factory()->create([
-        'username' => 'giordano',
-        'email' => 'giordano@example.com',
-        'phone' => '11999999999',
-        'cpf' => '12345678901',
-        'password' => 'secret1234',
-        'admin' => false,
+test('it proxies register route with api prefix automatically', function () {
+    Http::fake([
+        'http://backend-1.test/api/register' => Http::response([
+            'message' => 'User registered successfully.',
+            'backend' => 'backend-1',
+        ], 201),
     ]);
 
     $response = $this->withHeaders([
         'X-API-KEY' => 'test-api-key',
-    ])->patchJson("/api/users/{$user->id}/profile", [
+    ])->postJson('/api/register', [
+        'username' => 'giordano',
+        'email' => 'giordano@example.com',
+        'password' => 'secret1234',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('backend', 'backend-1')
+        ->assertJsonPath('processed_by_server', 'http://backend-1.test')
+        ->assertJsonPath('request_id', $response->headers->get('X-Request-Id'))
+        ->assertHeader('X-Backend-Url', 'http://backend-1.test');
+});
+
+test('it proxies users update routes through the load balancer', function () {
+    Http::fake([
+        'http://backend-1.test/api/users/99/profile' => Http::response([
+            'message' => 'Profile updated.',
+            'backend' => 'backend-1',
+        ], 200),
+    ]);
+
+    $response = $this->withHeaders([
+        'X-API-KEY' => 'test-api-key',
+    ])->patchJson('/api/users/99/profile', [
         'username' => 'novo-username',
-        'phone' => '11911111111',
-        'cpf' => '11122233344',
     ]);
 
     $response->assertSuccessful()
-        ->assertJsonPath('user.username', 'novo-username');
+        ->assertJsonPath('backend', 'backend-1')
+        ->assertJsonPath('processed_by_server', 'http://backend-1.test')
+        ->assertJsonPath('request_id', $response->headers->get('X-Request-Id'))
+        ->assertHeader('X-Backend-Url', 'http://backend-1.test');
+});
 
-    $adminResponse = $this->withHeaders([
-        'X-API-KEY' => 'test-api-key',
-    ])->patchJson("/api/users/{$user->id}/admin", [
-        'admin' => true,
+test('it preserves a client provided request id and forwards it to the backend', function () {
+    config()->set('backends.servers', [
+        'http://backend-1.test',
     ]);
 
-    $adminResponse->assertSuccessful()
-        ->assertJsonPath('user.admin', true);
-
-    $passwordResponse = $this->withHeaders([
-        'X-API-KEY' => 'test-api-key',
-    ])->patchJson("/api/users/{$user->id}/password", [
-        'password' => 'newsecret1234',
+    Http::fake([
+        'http://backend-1.test/api/login' => Http::response([
+            'message' => 'Login successful.',
+        ], 200),
     ]);
 
-    $passwordResponse->assertSuccessful();
+    $response = $this->withHeaders([
+        'X-API-KEY' => 'test-api-key',
+        'X-Request-Id' => 'req-12345',
+    ])->postJson('/api/login', [
+        'login' => 'giordano',
+        'password' => 'secret1234',
+    ]);
 
-    expect(Hash::check('newsecret1234', $user->fresh()->password))->toBeTrue();
+    $response->assertSuccessful()
+        ->assertHeader('X-Request-Id', 'req-12345')
+        ->assertJsonPath('request_id', 'req-12345');
+
+    Http::assertSent(static fn (Request $request): bool => $request->url() === 'http://backend-1.test/api/login'
+        && $request->hasHeader('X-Request-Id', 'req-12345')
+    );
+});
+
+test('it forwards configured backend api key to backend requests', function () {
+    config()->set('backends.servers', [
+        'http://backend-1.test',
+    ]);
+    config()->set('backends.api_key', 'backend-key-123');
+
+    Http::fake([
+        'http://backend-1.test/api/login' => Http::response([
+            'message' => 'Login successful.',
+        ], 200),
+    ]);
+
+    $this->withHeaders([
+        'X-API-KEY' => 'test-api-key',
+    ])->postJson('/api/login', [
+        'login' => 'giordano',
+        'password' => 'secret1234',
+    ])->assertSuccessful();
+
+    Http::assertSent(static fn (Request $request): bool => $request->url() === 'http://backend-1.test/api/login'
+        && $request->hasHeader('X-API-KEY', 'backend-key-123')
+    );
+});
+
+test('it can forward client api key to backend when enabled', function () {
+    config()->set('backends.servers', [
+        'http://backend-1.test',
+    ]);
+    config()->set('backends.api_key', null);
+    config()->set('backends.forward_client_api_key', true);
+
+    Http::fake([
+        'http://backend-1.test/api/login' => Http::response([
+            'message' => 'Login successful.',
+        ], 200),
+    ]);
+
+    $this->withHeaders([
+        'X-API-KEY' => 'test-api-key',
+    ])->postJson('/api/login', [
+        'login' => 'giordano',
+        'password' => 'secret1234',
+    ])->assertSuccessful();
+
+    Http::assertSent(static fn (Request $request): bool => $request->url() === 'http://backend-1.test/api/login'
+        && $request->hasHeader('X-API-KEY', 'test-api-key')
+    );
 });

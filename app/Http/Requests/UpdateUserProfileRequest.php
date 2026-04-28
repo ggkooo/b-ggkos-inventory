@@ -10,7 +10,14 @@ class UpdateUserProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $authenticatedUser = $this->user();
+        $targetUser = $this->route('user');
+
+        if (! $authenticatedUser instanceof User || ! $targetUser instanceof User) {
+            return false;
+        }
+
+        return $authenticatedUser->is($targetUser) || (bool) $authenticatedUser->admin;
     }
 
     public function rules(): array
