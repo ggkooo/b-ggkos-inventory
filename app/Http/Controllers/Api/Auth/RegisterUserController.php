@@ -24,6 +24,7 @@ class RegisterUserController extends Controller
             'company_id' => $company->id,
             'inventory_role' => InventoryRole::Owner->value,
             'name' => $userData['username'],
+            'admin' => false,
         ]);
 
         return response()->json([
