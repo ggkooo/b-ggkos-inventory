@@ -20,7 +20,7 @@ class RegisterUserRequest extends FormRequest
             'phone' => ['required', 'string', 'min:8', 'max:20', 'unique:users,phone'],
             'cpf' => ['required', 'string', 'size:11', 'unique:users,cpf'],
             'password' => ['required', 'string', Password::min(8)],
-            'admin' => ['required', 'boolean'],
+            'admin' => ['prohibited'],
         ];
     }
 }
